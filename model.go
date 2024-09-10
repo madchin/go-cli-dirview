@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/muesli/termenv"
 )
 
 const maxFileNameLen = 256
@@ -112,6 +113,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
+	output := termenv.NewOutput(os.Stdout)
 	s := strings.Builder{}
 	header := "Where do you want to head?\n\n"
 	footer := "\nPress q to quit.\n"
@@ -138,7 +140,12 @@ func (m model) View() string {
 	for i, choice := range m.choices.c[start:stop] {
 		cursor := emptyMark
 		if m.cursor == i+start {
-			cursor = focusMark
+			cursor = output.String(focusMark).Foreground(output.Color("118")).String()
+		}
+		if os.IsPathSeparator(choice[len(choice)-1]) {
+			choice = output.String(choice).Foreground(output.Color("214")).String()
+		} else {
+			choice = output.String(choice).Foreground(output.Color("33")).String()
 		}
 		_, _ = s.WriteString(fmt.Sprintf("%s %s\n", cursor, choice))
 	}
