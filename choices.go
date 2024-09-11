@@ -6,15 +6,18 @@ import (
 	"os/exec"
 )
 
+const none = 255
+
 type choices struct {
-	c []string
+	c   []string
+	dir string
 }
 
 func isNewLine(candidate byte) bool {
 	return candidate == 10
 }
 
-func choicesReader(r io.Reader) (choices, error) {
+func choicesReader(r io.Reader) ([]string, error) {
 	var err error
 	ch := make([]string, 0, 32)
 	buf := make([]byte, maxFileNameLen)
@@ -36,25 +39,25 @@ func choicesReader(r io.Reader) (choices, error) {
 		}
 		buf = buf[:n]
 	}
-	return choices{ch}, err
+	return ch, err
 }
 
-func readFileNamesViaLs() (choices, error) {
+func readFileNamesViaLs() ([]string, error) {
 	cmd := exec.Command("ls", "--file-type", "--group-directories-first")
 	pipe, err := cmd.StdoutPipe()
 	if err := cmd.Start(); err != nil {
-		return choices{}, fmt.Errorf("init command start: %v", err)
+		return nil, fmt.Errorf("init command start: %v", err)
 	}
 	defer pipe.Close()
 	if err != nil {
-		return choices{}, fmt.Errorf("model i/o init: %v", err)
+		return nil, fmt.Errorf("model i/o init: %v", err)
 	}
 	ch, err := choicesReader(pipe)
 	if err != nil {
-		return choices{}, fmt.Errorf("read command output: %v", err)
+		return nil, fmt.Errorf("read command output: %v", err)
 	}
 	if err := cmd.Wait(); err != nil {
-		return choices{}, fmt.Errorf("execution init command: %v", err)
+		return nil, fmt.Errorf("execution init command: %v", err)
 	}
 	return ch, nil
 }

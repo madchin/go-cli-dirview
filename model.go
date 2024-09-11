@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -28,11 +29,15 @@ func (r globalErr) Error() string {
 
 func (m model) Init() tea.Cmd {
 	return tea.Cmd(func() tea.Msg {
-		choices, err := readFileNamesViaLs()
+		chcs, err := readFileNamesViaLs()
 		if err != nil {
 			return globalErr{err}
 		}
-		return choices
+		dir, err := exec.Command("pwd").Output()
+		if err != nil {
+			return globalErr{err}
+		}
+		return choices{chcs, string(dir)}
 	})
 }
 
@@ -44,12 +49,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.cursor = 0
 		m.choices = msg
 	case globalErr:
-		m.choices = choices{[]string{msg.wrap.Error()}}
+		m.choices = choices{[]string{msg.wrap.Error()}, ""}
 		return m, tea.Quit
 	case tea.KeyMsg:
 		switch msg.String() {
 
-		case "ctrl+c", "q":
+		case "ctrl+c":
 			return m, tea.Quit
 
 		case "up":
@@ -80,12 +85,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if err := os.Chdir(destination); err != nil {
 					return globalErr{err}
 				}
-				choices, err := readFileNamesViaLs()
+				chcs, err := readFileNamesViaLs()
 				if err != nil {
 					return globalErr{err}
 				}
-				m.choices = choices
-				return m.choices
+				dir, err := exec.Command("pwd").Output()
+				if err != nil {
+					return globalErr{err}
+				}
+				return choices{chcs, string(dir)}
 			})
 		case "left", "esc":
 			return m, tea.Cmd(func() tea.Msg {
@@ -93,22 +101,66 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if err := os.Chdir(destination); err != nil {
 					return globalErr{err}
 				}
-				choices, err := readFileNamesViaLs()
+				chcs, err := readFileNamesViaLs()
 				if err != nil {
 					return globalErr{err}
 				}
-				m.choices = choices
-				return m.choices
+				dir, err := exec.Command("pwd").Output()
+				if err != nil {
+					return globalErr{err}
+				}
+				return choices{chcs, string(dir)}
 			})
+		case "a":
+			fallthrough
+		case "b":
+			fallthrough
+		case "c":
+			fallthrough
+		case "d":
+			fallthrough
+		case "e":
+			fallthrough
+		case "f":
+			fallthrough
+		case "g":
+			fallthrough
+		case "h":
+			fallthrough
+		case "i":
+			fallthrough
+		case "j":
+			fallthrough
+		case "k":
+			fallthrough
+		case "l":
+			fallthrough
+		case "m":
+			fallthrough
+		case "n":
+			fallthrough
+		case "o":
+			fallthrough
+		case "p":
+			fallthrough
+		case "r":
+			fallthrough
+		case "s":
+			fallthrough
 		case "t":
-			return m, tea.Cmd(func() tea.Msg {
-				str := os.Environ()
-				fmt.Printf("str :%v", str)
-				return struct{}{}
-			})
+			fallthrough
+		case "u":
+			fallthrough
+		case "w":
+			fallthrough
+		case "x":
+			fallthrough
+		case "y":
+			fallthrough
+		case "z":
+			return m.changeCursorPosOnKeystrokePress(msg.String()[0]), nil
 		}
 	}
-
 	return m, nil
 }
 
@@ -116,7 +168,8 @@ func (m model) View() string {
 	output := termenv.NewOutput(os.Stdout)
 	s := strings.Builder{}
 	header := "Where do you want to head?\n\n"
-	footer := "\nPress q to quit.\n"
+	subHeader := output.String(fmt.Sprintf("%s\n", m.choices.dir)).Foreground(output.Color("5")).String()
+	footer := "\nPress ctrl+c to quit.\n"
 	emptyMark := " "
 	focusMark := ">"
 	total := len(header) + len(emptyMark) + len(focusMark) + len(footer)
@@ -125,6 +178,7 @@ func (m model) View() string {
 	}
 	s.Grow(total)
 	_, _ = s.WriteString(header)
+	_, _ = s.WriteString(subHeader)
 	start, stop := 0, len(m.choices.c)
 	if stop > m.terminalHeight/2 {
 		if m.cursor == 0 {
@@ -152,4 +206,23 @@ func (m model) View() string {
 	_, _ = s.WriteString(footer)
 
 	return s.String()
+}
+
+func (m model) changeCursorPosOnKeystrokePress(keystroke byte) model {
+	for i, choice := range m.choices.c {
+		if i <= m.cursor {
+			continue
+		}
+		if choice[0] == keystroke {
+			m.cursor = i
+			return m
+		}
+	}
+	for i, choice := range m.choices.c[:m.cursor] {
+		if choice[0] == keystroke {
+			m.cursor = i
+			return m
+		}
+	}
+	return m
 }
