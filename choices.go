@@ -9,8 +9,7 @@ import (
 const none = 255
 
 type choices struct {
-	c   []string
-	dir string
+	c []string
 }
 
 func isNewLine(candidate byte) bool {

@@ -12,11 +12,14 @@ import (
 
 const maxFileNameLen = 256
 
+type currDir struct{ d string }
+
 type model struct {
-	terminalHeight int
-	choices        choices
-	cursor         int
-	selected       map[int]struct{}
+	terminalHeight   int
+	choices          choices
+	currentDirectory currDir
+	cursor           int
+	selected         map[int]struct{}
 }
 
 type globalErr struct {
@@ -33,11 +36,7 @@ func (m model) Init() tea.Cmd {
 		if err != nil {
 			return globalErr{err}
 		}
-		dir, err := exec.Command("pwd").Output()
-		if err != nil {
-			return globalErr{err}
-		}
-		return choices{chcs, string(dir)}
+		return choices{chcs}
 	})
 }
 
@@ -48,8 +47,17 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case choices:
 		m.cursor = 0
 		m.choices = msg
+		return m, tea.Cmd(func() tea.Msg {
+			dir, err := exec.Command("pwd").Output()
+			if err != nil {
+				return globalErr{err}
+			}
+			return currDir{string(dir)}
+		})
+	case currDir:
+		m.currentDirectory = msg
 	case globalErr:
-		m.choices = choices{[]string{msg.wrap.Error()}, ""}
+		m.choices = choices{[]string{msg.wrap.Error()}}
 		return m, tea.Quit
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -89,11 +97,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if err != nil {
 					return globalErr{err}
 				}
-				dir, err := exec.Command("pwd").Output()
-				if err != nil {
-					return globalErr{err}
-				}
-				return choices{chcs, string(dir)}
+				return choices{chcs}
 			})
 		case "left", "esc":
 			return m, tea.Cmd(func() tea.Msg {
@@ -105,11 +109,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if err != nil {
 					return globalErr{err}
 				}
-				dir, err := exec.Command("pwd").Output()
-				if err != nil {
-					return globalErr{err}
-				}
-				return choices{chcs, string(dir)}
+				return choices{chcs}
 			})
 		case "a":
 			fallthrough
@@ -168,7 +168,7 @@ func (m model) View() string {
 	output := termenv.NewOutput(os.Stdout)
 	s := strings.Builder{}
 	header := "Where do you want to head?\n\n"
-	subHeader := output.String(fmt.Sprintf("%s\n", m.choices.dir)).Foreground(output.Color("5")).String()
+	subHeader := output.String(fmt.Sprintf("%s\n", m.currentDirectory.d)).Foreground(output.Color("5")).String()
 	footer := "\nPress ctrl+c to quit.\n"
 	emptyMark := " "
 	focusMark := ">"
