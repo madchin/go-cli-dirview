@@ -6,8 +6,6 @@ import (
 	"os/exec"
 )
 
-const none = 255
-
 type choices struct {
 	c []string
 }

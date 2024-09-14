@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/madchin/go-cli-dirview/view"
 	"github.com/muesli/termenv"
 )
 
@@ -158,6 +158,54 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "y":
 			fallthrough
 		case "z":
+			fallthrough
+		case "A":
+			fallthrough
+		case "B":
+			fallthrough
+		case "C":
+			fallthrough
+		case "D":
+			fallthrough
+		case "E":
+			fallthrough
+		case "F":
+			fallthrough
+		case "G":
+			fallthrough
+		case "H":
+			fallthrough
+		case "I":
+			fallthrough
+		case "J":
+			fallthrough
+		case "K":
+			fallthrough
+		case "L":
+			fallthrough
+		case "M":
+			fallthrough
+		case "N":
+			fallthrough
+		case "O":
+			fallthrough
+		case "P":
+			fallthrough
+		case "R":
+			fallthrough
+		case "S":
+			fallthrough
+		case "T":
+			fallthrough
+		case "U":
+			fallthrough
+		case "W":
+			fallthrough
+		case "X":
+			fallthrough
+		case "Y":
+			fallthrough
+		case "Z":
 			return m.changeCursorPosOnKeystrokePress(msg.String()[0]), nil
 		}
 	}
@@ -167,43 +215,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	output := termenv.NewOutput(os.Stdout)
 	s := strings.Builder{}
-	header := "Where do you want to head?\n\n"
-	subHeader := output.String(fmt.Sprintf("%s\n", m.currentDirectory.d)).Foreground(output.Color("5")).String()
-	footer := "\nPress ctrl+c to quit.\n"
-	emptyMark := " "
-	focusMark := ">"
-	total := len(header) + len(emptyMark) + len(focusMark) + len(footer)
+	header := view.Header(output, m.currentDirectory.d)
+	body := view.Body(output, m.choices.c, m.cursor)
+	footer := view.Footer()
+	viewport := view.Viewport(m.terminalHeight)
+	total := len(header.Content) + len(body.EmptyMark) + len(body.FocusMark) + len(footer.Content)
 	for i := 0; i < len(m.choices.c); i++ {
 		total += len(m.choices.c[i])
 	}
 	s.Grow(total)
-	_, _ = s.WriteString(header)
-	_, _ = s.WriteString(subHeader)
-	start, stop := 0, len(m.choices.c)
-	if stop > m.terminalHeight/2 {
-		if m.cursor == 0 {
-			start = m.cursor
-		} else {
-			start = m.cursor - 1
-		}
-		if start+m.terminalHeight/2 > stop {
-			start = stop - m.terminalHeight/2
-		}
-		stop = start + m.terminalHeight/2
-	}
-	for i, choice := range m.choices.c[start:stop] {
-		cursor := emptyMark
-		if m.cursor == i+start {
-			cursor = output.String(focusMark).Foreground(output.Color("118")).String()
-		}
-		if os.IsPathSeparator(choice[len(choice)-1]) {
-			choice = output.String(choice).Foreground(output.Color("214")).String()
-		} else {
-			choice = output.String(choice).Foreground(output.Color("33")).String()
-		}
-		_, _ = s.WriteString(fmt.Sprintf("%s %s\n", cursor, choice))
-	}
-	_, _ = s.WriteString(footer)
+	_, _ = header.Render(viewport, s.WriteString)
+	_, _ = body.Render(viewport, s.WriteString)
+	_, _ = footer.Render(viewport, s.WriteString)
 
 	return s.String()
 }
