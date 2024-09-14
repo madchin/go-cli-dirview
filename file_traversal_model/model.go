@@ -60,12 +60,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case currentDirectory:
 		m.currentDirectory = msg
 	case globalErr:
-		m.choices = data.Choices{[]string{msg.wrap.Error()}}
+		m.choices = data.Choices{C: []string{msg.wrap.Error()}}
 		return m, tea.Quit
 	case tea.KeyMsg:
 		switch msg.Type {
-		case tea.KeyCtrlC:
-			return m, tea.Quit
 		case tea.KeyUp:
 			if m.cursor > 0 {
 				m.cursor--
@@ -128,16 +126,14 @@ func (m Model) View() string {
 	s := strings.Builder{}
 	header := view.Header(output, m.currentDirectory.d)
 	body := view.Body(output, m.choices.C, m.cursor)
-	footer := view.Footer()
 	viewport := view.Viewport(m.terminalHeight)
-	total := len(header.Content) + len(body.EmptyMark) + len(body.FocusMark) + len(footer.Content)
+	total := len(header.Content) + len(body.EmptyMark) + len(body.FocusMark)
 	for i := 0; i < len(m.choices.C); i++ {
 		total += len(m.choices.C[i])
 	}
 	s.Grow(total)
 	_, _ = header.Render(viewport, s.WriteString)
 	_, _ = body.Render(viewport, s.WriteString)
-	_, _ = footer.Render(viewport, s.WriteString)
 
 	return s.String()
 }
