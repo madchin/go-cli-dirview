@@ -1,7 +1,8 @@
 package view
 
 const (
-	dimensionMin = iota
+	dimensionVeryLow = iota
+	dimensionLow
 	dimensionMedium
 	dimensionMax
 )
@@ -12,7 +13,10 @@ type viewport struct {
 
 func Viewport(currHeight int) viewport {
 	if currHeight/8 < 2 {
-		return viewport{dimensionMin}
+		return viewport{dimensionVeryLow}
+	}
+	if currHeight/8 < 3 {
+		return viewport{dimensionLow}
 	}
 	if currHeight/8 < 4 {
 		return viewport{dimensionMedium}

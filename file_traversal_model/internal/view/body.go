@@ -23,7 +23,7 @@ func Body(
 ) body {
 	return body{
 		FocusMark:    ">",
-		EmptyMark:    "",
+		EmptyMark:    " ",
 		output:       output,
 		data:         data,
 		focusElement: chosen,
@@ -32,7 +32,11 @@ func Body(
 
 func (b body) Render(viewport viewport, renderer func(content string) (n int, err error)) (n int, err error) {
 	start, stop := 0, len(b.data)
-	if viewport.dimension == dimensionMin {
+	if viewport.dimension == dimensionVeryLow {
+		if stop > 3 {
+			start, stop = b.viewRange(3)
+		}
+	} else if viewport.dimension == dimensionLow {
 		if stop > 6 {
 			start, stop = b.viewRange(6)
 		}
