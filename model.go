@@ -27,11 +27,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.Type {
-		case tea.KeyCtrlC:
-			return m, tea.Quit
-		}
 		switch msg.String() {
+		case "ctrl+c":
+			return m, tea.Quit
 		case "/":
 			m.state = m.toggleState()
 			m.input, cmd = m.input.Update(msg)
