@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	data "github.com/madchin/go-cli-dirview/file_traversal_model/internal"
-	"github.com/madchin/go-cli-dirview/file_traversal_model/internal/view"
+	data "github.com/madchin/go-cli-dirview/file_traversal/internal"
+	"github.com/madchin/go-cli-dirview/file_traversal/internal/view"
 	"github.com/muesli/termenv"
 )
 

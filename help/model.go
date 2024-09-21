@@ -7,30 +7,32 @@ import (
 )
 
 type Leave struct{}
+type Display struct{}
 
-type model struct {
+type Model struct {
 	content []string
 }
 
-func New(content ...string) model {
-	return model{content}
+func New() Model {
+	return Model{}
 }
 
-func (m model) Init() tea.Cmd {
+func (m Model) WithContent(content ...string) Model {
+	m.content = content
+	return m
+}
+
+func (m Model) Init() tea.Cmd {
 	return nil
 }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg.(type) {
-	case tea.KeyMsg:
-		return m, func() tea.Msg {
-			return Leave{}
-		}
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	return m, func() tea.Msg {
+		return Leave{}
 	}
-	return m, nil
 }
 
-func (m model) View() string {
+func (m Model) View() string {
 	var strBuilder strings.Builder
 	var total int
 	for i := 0; i < len(m.content); i++ {
