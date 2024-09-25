@@ -2,22 +2,18 @@ package file_traversal
 
 import (
 	"os"
-	"os/exec"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	data "github.com/madchin/go-cli-dirview/file_traversal/internal"
-	"github.com/madchin/go-cli-dirview/file_traversal/internal/view"
+	"github.com/madchin/go-cli-dirview/actual_path"
+	view "github.com/madchin/go-cli-dirview/file_traversal/internal"
 	"github.com/muesli/termenv"
 )
 
-type currentDirectory struct{ d string }
-
 type Model struct {
-	choices          data.Choices
-	currentDirectory currentDirectory
-	Cursor           int
-	selected         map[int]struct{}
+	choices  view.Choices
+	Cursor   int
+	selected map[int]struct{}
 }
 
 func New() Model {
@@ -34,7 +30,7 @@ func (r globalErr) Error() string {
 
 func (m Model) Init() tea.Cmd {
 	return tea.Cmd(func() tea.Msg {
-		choices, err := data.ReadFileNamesViaLs()
+		choices, err := view.ReadFileNamesViaLs()
 		if err != nil {
 			return globalErr{err}
 		}
@@ -44,20 +40,14 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case data.Choices:
+	case view.Choices:
 		m.Cursor = 0
 		m.choices = msg
-		return m, tea.Cmd(func() tea.Msg {
-			dir, err := exec.Command("pwd").Output()
-			if err != nil {
-				return globalErr{err}
-			}
-			return currentDirectory{string(dir)}
-		})
-	case currentDirectory:
-		m.currentDirectory = msg
+		return m, func() tea.Msg {
+			return actual_path.Load()
+		}
 	case globalErr:
-		m.choices = data.Choices{C: []string{msg.wrap.Error()}}
+		m.choices = view.Choices{C: []string{msg.wrap.Error()}}
 		return m, tea.Quit
 	case tea.KeyMsg:
 		switch msg.Type {
@@ -89,7 +79,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if err := os.Chdir(destination); err != nil {
 					return globalErr{err}
 				}
-				choices, err := data.ReadFileNamesViaLs()
+				choices, err := view.ReadFileNamesViaLs()
 				if err != nil {
 					return globalErr{err}
 				}
@@ -101,7 +91,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if err := os.Chdir(destination); err != nil {
 					return globalErr{err}
 				}
-				choices, err := data.ReadFileNamesViaLs()
+				choices, err := view.ReadFileNamesViaLs()
 				if err != nil {
 					return globalErr{err}
 				}
@@ -121,14 +111,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) View() string {
 	output := termenv.NewOutput(os.Stdout)
 	s := strings.Builder{}
-	header := view.Header(output, m.currentDirectory.d)
 	body := view.Body(output, m.choices.C, m.Cursor)
-	total := len(header.Content) + len(body.EmptyMark) + len(body.FocusMark)
+	total := len(body.EmptyMark) + len(body.FocusMark)
 	for i := 0; i < len(m.choices.C); i++ {
 		total += len(m.choices.C[i])
 	}
 	s.Grow(total)
-	_, _ = header.Render(s.WriteString)
 	_, _ = body.Render(s.WriteString)
 
 	return s.String()

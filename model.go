@@ -2,6 +2,7 @@ package main
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/madchin/go-cli-dirview/actual_path"
 	file_traversal "github.com/madchin/go-cli-dirview/file_traversal"
 	"github.com/madchin/go-cli-dirview/help"
 )
@@ -16,6 +17,7 @@ const (
 
 type model struct {
 	viewport      viewport
+	actualPath    tea.Model
 	fileTraversal tea.Model
 	input         tea.Model
 	help          tea.Model
@@ -23,7 +25,7 @@ type model struct {
 }
 
 func (m model) Init() tea.Cmd {
-	return tea.Batch(m.input.Init(), m.fileTraversal.Init())
+	return tea.Batch(m.input.Init(), m.fileTraversal.Init(), m.actualPath.Init())
 }
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
@@ -54,9 +56,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case help.Display:
 		m.state = helpState
 		return m, cmd
+	case actual_path.ActualPath:
+		m.actualPath, cmd = m.actualPath.Update(msg)
+		return m, cmd
 	}
 	if m.state == traversalState {
 		m.fileTraversal, cmd = m.fileTraversal.Update(msg)
+		return m, cmd
 	}
 	if m.state == writingState {
 		m.input, cmd = m.input.Update(msg)
@@ -90,5 +96,5 @@ func (m model) View() string {
 			`).View()
 		return m.viewport.renderView(content, m.help.(help.Model).Cursor)
 	}
-	return m.viewport.renderView(m.fileTraversal.View(), m.fileTraversal.(file_traversal.Model).Cursor) + "\n\nPress ctrl+c to quit.\n\n" + m.input.View()
+	return m.actualPath.View() + m.viewport.renderView(m.fileTraversal.View(), m.fileTraversal.(file_traversal.Model).Cursor) + "\n\nPress ctrl+c to quit.\n\n" + m.input.View()
 }
