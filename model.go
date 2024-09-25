@@ -1,9 +1,8 @@
 package main
 
 import (
-	"fmt"
-
 	tea "github.com/charmbracelet/bubbletea"
+	file_traversal "github.com/madchin/go-cli-dirview/file_traversal"
 	"github.com/madchin/go-cli-dirview/help"
 )
 
@@ -16,6 +15,7 @@ const (
 )
 
 type model struct {
+	viewport      viewport
 	fileTraversal tea.Model
 	input         tea.Model
 	help          tea.Model
@@ -25,28 +25,34 @@ type model struct {
 func (m model) Init() tea.Cmd {
 	return tea.Batch(m.input.Init(), m.fileTraversal.Init())
 }
-
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.viewport = determineViewport(msg.Height)
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "/":
-			if m.state == writingState {
-				m.state = m.setState(traversalState)
-			} else {
-				m.state = writingState
+			if m.state == writingState || m.state == traversalState {
+				m.input, cmd = m.input.Update(msg)
 			}
-			m.input, cmd = m.input.Update(msg)
+			if m.state == writingState {
+				m.state = traversalState
+				return m, cmd
+			}
+			if m.state == traversalState || m.state == helpState {
+				m.state = writingState
+				return m, cmd
+			}
 			return m, cmd
 		}
 	case help.Leave:
-		m.state = m.setState(writingState)
+		m.state = writingState
 		return m, cmd
 	case help.Display:
-		m.state = m.setState(helpState)
+		m.state = helpState
 		return m, cmd
 	}
 	if m.state == traversalState {
@@ -55,35 +61,34 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.state == writingState {
 		m.input, cmd = m.input.Update(msg)
 	}
+	if m.state == helpState {
+		m.help, cmd = m.help.Update(msg)
+	}
 	return m, cmd
 }
 
 func (m model) View() string {
+	var content string
 	if m.state == helpState {
-		return m.help.(help.Model).WithContent(
+		content = m.help.(help.Model).WithContent(
 			`Welcome to /help page!
 			Overall, using dirview, you can switch between three modes, either interactive and not.
 			Writing, Traversal and Help ones.
 			
 			Traversal mode is used to view files / directories in file tree.
-				You can type letter to jump onto files/directories at this letter.
-				Jump between directories using arrows (< -- jump back) (> -- jump forward)
-
+			You can type letter to jump onto files/directories at this letter.
+			Jump between directories using arrows (< -- jump back) (> -- jump forward)
+			
 			Writing mode is used to write commands onto application
-				Actual write commands: 
-					/help
+			Actual write commands: 
+			/help
 			
 			Help mode which displays this page.
-
+			
 			To toggle between traversal / writing modes press / keystroke.
 			To jump onto help mode, type /help in writing mode
-		`).View()
-	} else {
-		return fmt.Sprintf("%s\nPress ctrl+c to quit.\n%s\n", m.fileTraversal.View(), m.input.View())
+			`).View()
+		return m.viewport.renderView(content, m.help.(help.Model).Cursor)
 	}
-}
-
-func (m model) setState(state state) state {
-	m.state = state
-	return m.state
+	return m.viewport.renderView(m.fileTraversal.View(), m.fileTraversal.(file_traversal.Model).Cursor) + "\n\nPress ctrl+c to quit.\n\n" + m.input.View()
 }

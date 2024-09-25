@@ -34,8 +34,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			switch m.input.Value() {
 			case "/help":
-				m.input.Blur()
-				m.input.SetValue("")
 				return m, func() tea.Msg {
 					return help.Display{}
 				}

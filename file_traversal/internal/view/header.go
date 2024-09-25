@@ -16,6 +16,6 @@ func Header(output *termenv.Output, data string) header {
 	}
 }
 
-func (h header) Render(viewport viewport, renderer func(content string) (n int, err error)) (int, error) {
+func (h header) Render(renderer func(content string) (n int, err error)) (int, error) {
 	return renderer(h.Content)
 }

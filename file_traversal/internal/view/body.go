@@ -30,28 +30,10 @@ func Body(
 	}
 }
 
-func (b body) Render(viewport viewport, renderer func(content string) (n int, err error)) (n int, err error) {
-	start, stop := 0, len(b.data)
-	if viewport.dimension == dimensionVeryLow {
-		if stop > 3 {
-			start, stop = b.viewRange(3)
-		}
-	} else if viewport.dimension == dimensionLow {
-		if stop > 6 {
-			start, stop = b.viewRange(6)
-		}
-	} else if viewport.dimension == dimensionMedium {
-		if stop > 12 {
-			start, stop = b.viewRange(12)
-		}
-	} else if viewport.dimension == dimensionMax {
-		if stop > 18 {
-			start, stop = b.viewRange(18)
-		}
-	}
-	for i, line := range b.data[start:stop] {
+func (b body) Render(renderer func(content string) (n int, err error)) (n int, err error) {
+	for i, line := range b.data {
 		cursor := b.EmptyMark
-		if b.focusElement == i+start {
+		if b.focusElement == i {
 			cursor = b.output.String(b.FocusMark).Foreground(b.output.Color("118")).String()
 		}
 		if isDirectory(line) {
@@ -66,17 +48,6 @@ func (b body) Render(viewport viewport, renderer func(content string) (n int, er
 		n += count
 	}
 	return n, err
-}
-
-func (b body) viewRange(threshold int) (start int, stop int) {
-	start = b.focusElement
-	if len(b.data) > start+threshold {
-		stop = start + threshold
-	} else {
-		stop = len(b.data)
-	}
-	start = stop - threshold
-	return start, stop
 }
 
 func isDirectory(candidate string) bool {

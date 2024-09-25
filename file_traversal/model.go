@@ -14,10 +14,9 @@ import (
 type currentDirectory struct{ d string }
 
 type Model struct {
-	terminalHeight   int
 	choices          data.Choices
 	currentDirectory currentDirectory
-	cursor           int
+	Cursor           int
 	selected         map[int]struct{}
 }
 
@@ -45,10 +44,8 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.terminalHeight = msg.Height
 	case data.Choices:
-		m.cursor = 0
+		m.Cursor = 0
 		m.choices = msg
 		return m, tea.Cmd(func() tea.Msg {
 			dir, err := exec.Command("pwd").Output()
@@ -65,26 +62,26 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyUp:
-			if m.cursor > 0 {
-				m.cursor--
+			if m.Cursor > 0 {
+				m.Cursor--
 				return m, nil
 			}
-			if m.cursor == 0 {
-				m.cursor = len(m.choices.C) - 1
+			if m.Cursor == 0 {
+				m.Cursor = len(m.choices.C) - 1
 				return m, nil
 			}
 		case tea.KeyDown:
-			if m.cursor < len(m.choices.C)-1 {
-				m.cursor++
+			if m.Cursor < len(m.choices.C)-1 {
+				m.Cursor++
 				return m, nil
 			}
-			if m.cursor == len(m.choices.C)-1 {
-				m.cursor = 0
+			if m.Cursor == len(m.choices.C)-1 {
+				m.Cursor = 0
 				return m, nil
 			}
 		case tea.KeyEnter, tea.KeyRight:
 			return m, tea.Cmd(func() tea.Msg {
-				destination := m.choices.C[m.cursor]
+				destination := m.choices.C[m.Cursor]
 				if !os.IsPathSeparator(destination[len(destination)-1]) {
 					m.choices.C = []string{"You dont have permission to run this file, want to make it executable and exec it?", "* Yes", "* No"}
 					return m.choices
@@ -125,32 +122,31 @@ func (m Model) View() string {
 	output := termenv.NewOutput(os.Stdout)
 	s := strings.Builder{}
 	header := view.Header(output, m.currentDirectory.d)
-	body := view.Body(output, m.choices.C, m.cursor)
-	viewport := view.Viewport(m.terminalHeight)
+	body := view.Body(output, m.choices.C, m.Cursor)
 	total := len(header.Content) + len(body.EmptyMark) + len(body.FocusMark)
 	for i := 0; i < len(m.choices.C); i++ {
 		total += len(m.choices.C[i])
 	}
 	s.Grow(total)
-	_, _ = header.Render(viewport, s.WriteString)
-	_, _ = body.Render(viewport, s.WriteString)
+	_, _ = header.Render(s.WriteString)
+	_, _ = body.Render(s.WriteString)
 
 	return s.String()
 }
 
 func (m Model) changeCursorPosOnKeystrokePress(keystroke byte) Model {
 	for i, choice := range m.choices.C {
-		if i <= m.cursor {
+		if i <= m.Cursor {
 			continue
 		}
 		if choice[0] == keystroke {
-			m.cursor = i
+			m.Cursor = i
 			return m
 		}
 	}
-	for i, choice := range m.choices.C[:m.cursor] {
+	for i, choice := range m.choices.C[:m.Cursor] {
 		if choice[0] == keystroke {
-			m.cursor = i
+			m.Cursor = i
 			return m
 		}
 	}
